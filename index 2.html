@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RSAC Ghaziabad GIS Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ol@v10.5.0/ol.css" />
+  <link rel="stylesheet" href="style.css" />
+  
+</head>
+<body>
+  
+  <!-- Transparent Header -->
+  <header>
+    <div class="brand-box">
+      <h4>Remote Sensing Application Centre UP</h4>
+      <h5>Government of Uttar Pradesh</h5>
+    </div>
+    <div class="search-container">
+      <input type="text" id="search-input" placeholder="Search road..." />
+       <div id="search-suggestions" class="suggestions-box"></div>
+       <button class="search-btn">🔍</button>
+      </div>
+
+      <div class="hamburger" id="sidebar-toggle">☰</div>
+  </header>
+
+  <!-- Map Container -->
+  <div id="map-container">
+    <div id="map"></div>
+  </div>
+
+  <div id="sidebar">
+    <h2>Road Statistics (Charts)</h2>
+    <canvas id="chart-condition"></canvas>
+    <canvas id="chart-ownership"></canvas>
+    <canvas id="chart-category"></canvas>
+    <canvas id="chart-material"></canvas>
+  </div>
+
+  <!-- Left Controls -->
+  <div class="left-controls">
+    <button class="control-btn" id="zoom-in" title="Zoom In">+</button>
+    <button class="control-btn" id="zoom-out" title="Zoom Out">−</button>
+    <button class="control-btn" id="home-btn" title="Home View">🏠</button>
+    <button class="control-btn" id="fullscreen-btn" title="Toggle Fullscreen">⛶</button>
+    <button class="control-btn" id="download-csv" title="Download CSV">⬇ CSV</button>
+
+  </div>
+
+  <!-- Right Controls -->
+  <div class="right-controls">
+    <div class="dropdown-container basemap-wrapper">
+  <label class="dropdown-label">BASEMAP & LAYERS</label>
+  <button class="dropdown-btn" id="basemap-toggle-btn">▼</button>
+  <div id="basemap-dropdown-content" class="layer-options hidden">
+    <label for="basemap-select">Basemap:</label>
+    <select id="basemap-select">
+      <option value="osm">OpenStreetMap</option>
+      <option value="satellite">Satellite</option>
+      <option value="topo">Topographic</option>
+    </select>
+    <label><input type="checkbox" id="wardToggle" checked /> Ward Boundary</label><br />
+    <label><input type="checkbox" id="zoneToggle" checked /> Zone Boundary</label><br />
+    <label><input type="checkbox" id="dummyToggle" /> Dummyq12</label>
+  </div>
+</div>
+
+
+    
+    
+    <div class="dropdown-container">
+      <label class="dropdown-label">ZONE</label>
+      <select id="zone-select">
+        <option value="">Select Zone</option>
+        <option value="1">Zone 1</option>
+        <option value="2">Zone 2</option>
+      </select>
+    </div>
+    
+    <div class="dropdown-container" style="display: none;">
+      <label class="dropdown-label">WARD</label>
+      <select id="ward-select">
+        <option value="">Select Ward</option>
+        <option value="Nasirpur">Nasirpur</option>
+        <option value="Raj Nagar">Raj Nagar</option>
+        <option value="Mahroli">Mahroli</option>
+        <option value="Daulatpura">Daulatpura</option>
+        <option value="Govind puram Harsawa">Govind puram Harsawa</option>
+      </select>
+    </div>
+    
+    <div class="dropdown-container">
+      <label class="dropdown-label">ROAD OWNERSHIP</label>
+    <select id="ownershipFilter">
+  <option value="">Select Ownership</option>
+  <option value="All">All</option>
+  <option value="PWD">PWD</option>
+  <option value="Railway">Railway</option>
+  <option value="Anaaj Mandi">Anaaj Mandi</option>
+  <option value="Ghaziabad Developement Authority">Ghaziabad Developement Authority</option>
+  <option value="Ghaziabad Nagar Nigam">Ghaziabad Nagar Nigam</option>
+  <option value="Private Colony Road">Private Colony Road</option>
+  <option value="Under NDRF">Under NDRF</option>
+  <option value="Under NHAI">Under NHAI</option>
+  <option value="Under Reserve Police Lines">Under Reserve Police Lines</option>
+</select>
+ </div>
+ <div class="dropdown-container">
+  <label class="dropdown-label">ROAD CATEGORY</label>
+  <select id="categoryFilter">
+    <option value="">Select Category</option>
+    <option value="All">All</option>
+    <option value="Local">Local</option>
+    <option value="Collector">Collector</option>
+    <option value="Sub-Arterial">Sub-Arterial</option>
+    <option value="Arterial">Arterial</option>
+    <option value="Highway">Highway</option>
+    <option value="Others">Others</option>
+  </select>
+</div>
+
+
+    
+    <div class="dropdown-container">
+      <label class="dropdown-label">ROAD CONDITION</label>
+      <select id="roadConditionFilter">
+  <option value="">Select Condition</option>
+  <option value="All">All</option>
+  <option value="Good">Good</option>
+  <option value="Moderate">Moderate</option>
+  <option value="Poor">Poor</option>
+</select>
+</div>
+
+<div class="dropdown-container">
+  <label for="materialFilter" class="dropdown-label">ROAD MATERIAL</label>
+  <select id="materialFilter">
+    <option value="">Select Material</option>
+    <option value="All">All</option>
+  </select>
+</div>
+
+<div class="dropdown-container">
+  <label class="dropdown-label" for="colorBy">COLOR BY</label>
+  <select id="colorBy">
+    <option value="">Default</option>
+    <option value="condition">Road Condition</option>
+    <option value="ownership">Road Ownership</option>
+    <option value="material">Road Material</option>
+  </select>
+</div>
+
+
+
+
+     <!-- Road Condition Legend -->
+<div id="condition-legend" class="legend-box" style="display: none;">
+  <strong>Condition Legend:</strong>
+  <div><span class="legend-color" style="background-color: green;"></span> Good</div>
+  <div><span class="legend-color" style="background-color: orange;"></span> Moderate</div>
+  <div><span class="legend-color" style="background-color: red;"></span> Poor</div>
+</div>
+
+    <!-- Ownership Legend -->
+<div id="ownership-legend" class="legend-box" style="display: none;">
+  <strong>Ownership Legend:</strong>
+  <div><span class="legend-color" style="background-color: red;"></span> Anaaj Mandi</div>
+  <div><span class="legend-color" style="background-color: orange;"></span> Ghaziabad Developement Authority</div>
+  <div><span class="legend-color" style="background-color: green;"></span> Ghaziabad Nagar Nigam</div>
+  <div><span class="legend-color" style="background-color: blue;"></span> Private Colony Road</div>
+  <div><span class="legend-color" style="background-color: purple;"></span> PWD</div>
+  <div><span class="legend-color" style="background-color: brown;"></span> Railway</div>
+  <div><span class="legend-color" style="background-color: cyan;"></span> Under NDRF</div>
+  <div><span class="legend-color" style="background-color: magenta;"></span> Under NHAI</div>
+  <div><span class="legend-color" style="background-color: black;"></span> Under Reserve Police Lines</div>
+</div>
+
+<div id="material-legend" class="legend-box" style="display: none;">
+  <div><span class="legend-color" style="background:#3e3e3e;"></span> Bitumin</div>
+  <div><span class="legend-color" style="background:#8080ff;"></span> CC</div>
+  <div><span class="legend-color" style="background:#ff9933;"></span> Interlocking Road</div>
+  <div><span class="legend-color" style="background:#996633;"></span> Kacchi Road</div>
+  <div><span class="legend-color" style="background-color:#aaaaaa;"></span> Proposed Road</div>
+</div>
+
+
+<div id="condition-pie-container" style="width: 300px; margin-top: 10px; display: none;">
+  <canvas id="condition-pie"></canvas>
+</div>
+
+ </div>
+
+  <!-- Enhanced Draggable Road Statistics Box -->
+  <div id="statistics-box" class="statistics-container draggable" style="display: none;">
+    
+    <div class="statistics-header drag-handle">
+      <h3 id="statistics-title">Road Statistics</h3>
+      <div class="header-controls">
+        <button id="close-stats" class="close-btn">×</button>
+      </div>
+    </div>
+    <div id="statistics-content" class="statistics-content">
+      <!-- Basic Statistics -->
+      <div class="stat-section">
+        <div class="section-title">Overview</div>
+        <div class="stat-item">
+          <span class="stat-label">Total Roads:</span>
+          <span id="total-roads" class="stat-value">0</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-label">Total Length:</span>
+          <span id="total-length" class="stat-value">0 km</span>
+        </div>
+      </div>
+
+      <!-- Condition Breakdown -->
+      <div class="stat-section">
+        <div class="section-title">Condition Breakdown</div>
+        <div class="condition-breakdown">
+          <div class="condition-item good">
+            <span class="condition-label">Good:</span>
+            <span class="condition-stats">
+              <span id="good-count">0</span> roads, 
+              <span id="good-length">0 km</span>
+            </span>
+          </div>
+          <div class="condition-item moderate">
+            <span class="condition-label">Moderate:</span>
+            <span class="condition-stats">
+              <span id="moderate-count">0</span> roads, 
+              <span id="moderate-length">0 km</span>
+            </span>
+          </div>
+          <div class="condition-item poor">
+            <span class="condition-label">Poor:</span>
+            <span class="condition-stats">
+              <span id="poor-count">0</span> roads, 
+              <span id="poor-length">0 km</span>
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ownership Breakdown -->
+      <div class="stat-section">
+        <div class="section-title">Ownership Distribution</div>
+        <div id="ownership-breakdown" class="ownership-breakdown">
+          <!-- Dynamic ownership data will be inserted here -->
+        </div>
+      </div>
+
+      <!-- Category Breakdown -->
+      <div class="stat-section">
+        <div class="section-title">Road Categories</div>
+        <div id="category-breakdown" class="category-breakdown">
+          <!-- Dynamic category data will be inserted here -->
+        </div>
+      </div>
+
+      
+    </div>
+  </div>
+  <div id="wardwise-road-breakdown" class="wardwise-popup hidden">
+    <div class="wardwise-header">
+      <span id="wardwise-title">Wardwise Breakdown</span>
+      <button onclick="closeWardwisePopup()">×</button>
+    </div>
+    <div id="wardwise-content"></div>
+  </div>
+  <button onclick="showWardwiseBreakdown('GT Road')">Wardwise Details</button>
+
+  
+  <!-- Scale Control -->
+  <div class="scale-container">
+    <div class="scale-line" id="scale-line"></div>
+    <div class="scale-text" id="scale-text">Loading...</div>
+  </div>
+
+  <div id="legend-container" class="legend-container"></div>
+
+  <div id="ward-length-popup" class="popup-box hidden">
+    <div class="popup-header">
+      <span id="popup-road-name">Ward-wise Length</span>
+      <button onclick="closeWardLengthPopup()">×</button>
+    </div>
+    <div id="ward-length-details"></div>
+  </div>
+  
+  <!-- Coordinates Display -->
+  <div class="coordinates-container">
+    <div class="coord-label">Coordinates</div>
+    <div id="coordinates">Lat: 28.6700°, Lon: 77.4500°</div>
+  </div>
+<div id="popup" class="ol-popup">
+  <div id="popup-content"></div>
+</div>
+
+  
+
+  <!-- Footer -->
+  <footer>
+    <p class="copyright">© Remote Sensing Application Centre UP</p>
+    <p class="developer">Developed by RSAC</p>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/ol@v10.5.0/dist/ol.js"></script>
+  <script src="script.js"></script>
+  
+
+  <!-- Popup container -->
+<div id="road-table-container">
+  <button id="road-table-toggle">▼ Road Data</button>
+  <div id="road-table-wrapper" class="hidden">
+    <table id="road-table">
+      <thead>
+        <tr>
+          <th>GID</th>
+          <th>ID</th>
+          <th>Zone Name</th>
+          <th>Zone No</th>
+          <th>Ward Name</th>
+          <th>Ward No</th>
+          <th>Ownership</th>
+          <th>Road Name</th>
+          <th>Road Meter</th>
+          <th>Length (m)</th>
+          <th>ROW Class</th>
+          <th>Carriage W</th>
+          <th>Carriage M</th>
+          <th>Condition</th>
+          <th>Category</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<div id="ward-length-popup" class="popup-box hidden">
+  <div class="popup-header">
+    <span id="popup-road-name">Ward-wise Length</span>
+    <button onclick="closeWardLengthPopup()">×</button>
+  </div>
+  <div id="ward-length-details"></div>
+</div>
+
+</body>
+</html>
